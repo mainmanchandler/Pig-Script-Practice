@@ -33,33 +33,11 @@ STORE price_desc_avg_stats_by_group INTO 'AirBnB_neighbourhood' USING PigStorage
 
 -- 3. For subset in step 1 dump: room_type, lowest_price foreach room_type, name of property with lowest price for room_type
 
-/*
-room_type_subset = GROUP subset BY room_type;
-
-lowest_price_by_room_type = FOREACH room_type_subset {
-    lowest_price = MIN(subset.price);
-    lowest_price_for_room = FILTER subset BY price == lowest_price; --keep only the lowest price per room type
-    GENERATE group AS room_type, lowest_price_for_room.price AS price, lowest_price_for_room AS property;
-}
-
-DUMP lowest_price_by_room_type
-
 grouped_by_room_type = GROUP subset BY room_type;
+
 room_type_stats = FOREACH grouped_by_room_type {
-    ordered_rooms = ORDER subset BY price ASC;
-    lowest_priced_room = LIMIT ordered_rooms 1;
-    GENERATE group AS room_type, 
-             lowest_priced_room.price AS lowest_price, 
-             lowest_priced_room.name AS property_name;
+    ordered_rooms = ORDER subset BY price ASC; --order to get the lowest price
+    lowest_priced_room = LIMIT ordered_rooms 1; --lowest price for each room type (first index of group)
+    GENERATE group AS room_type, FLATTEN(lowest_priced_room.price) AS lowest_price, FLATTEN(lowest_priced_room.name) AS property_name; --Flatten to remove tuple issue
 }
 DUMP room_type_stats;
-
-*/
-
-roomTypeGrpd = group subset by room_type;
-minPriceByRoomType = foreach roomTypeGrpd generate group as room_type, MIN(subset.price) as min_price;
-
-joinData = join subset by (room_type, price), minPriceByRoomType by (room_type, min_price);
-result = foreach joinData generate subset::room_type, subset::price, subset::name;
-dump result;
-
