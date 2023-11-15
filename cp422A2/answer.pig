@@ -43,7 +43,6 @@ lowest_price_by_room_type = FOREACH room_type_subset {
 }
 
 DUMP lowest_price_by_room_type
-*/
 
 grouped_by_room_type = GROUP subset BY room_type;
 room_type_stats = FOREACH grouped_by_room_type {
@@ -55,4 +54,12 @@ room_type_stats = FOREACH grouped_by_room_type {
 }
 DUMP room_type_stats;
 
+*/
+
+roomTypeGrpd = group subset by room_type;
+minPriceByRoomType = foreach roomTypeGrpd generate group as room_type, MIN(subset.price) as min_price;
+
+joinData = join subset by (room_type, price), minPriceByRoomType by (room_type, min_price);
+result = foreach joinData generate subset::room_type, subset::price, subset::name;
+dump result;
 
