@@ -11,16 +11,15 @@ dataset = LOAD 'AB_NYC_2019.csv' USING PigStorage(',') AS (id:int, name:chararra
                                                         reviews_per_month:float, calculated_host_listings_count:int, availability_365:int); --DUMP dataset;
 
 
+
 -- 1. Analyze records where: min_nights > 10  |  num_reviews > 10  |  2018 < last_review < 2019
 subset = FILTER dataset BY minimum_nights > 10 AND number_of_reviews > 10 AND last_review MATCHES '.*2018.*|.*2019.*'; --DUMP subset;
 
 
 
-
 -- 2. Put the neighbourhood_group's together and store in col 1 (this is what I interpret from the question)
-neighbourhood_subset = GROUP subset BY neighbourhood_group;
-
 -- Average price of each neighbourhood_group in col 2, Average num of days at each neighbourhood_group in col 3
+neighbourhood_subset = GROUP subset BY neighbourhood_group;
 averaged_stats_by_group = FOREACH neighbourhood_subset GENERATE group, AVG(subset.price) AS price_ordering, AVG(subset.availability_365);
 
 -- Order results by price descending 
@@ -32,12 +31,12 @@ STORE price_desc_avg_stats_by_group INTO 'AirBnB_neighbourhood' USING PigStorage
 
 
 -- 3. For subset in step 1 dump: room_type, lowest_price foreach room_type, name of property with lowest price for room_type
+room_type_grouped = GROUP subset BY room_type;
 
-grouped_by_room_type = GROUP subset BY room_type;
-
-room_type_stats = FOREACH grouped_by_room_type {
-    ordered_rooms = ORDER subset BY price ASC; --order to get the lowest price
-    lowest_priced_room = LIMIT ordered_rooms 1; --lowest price for each room type (first index of group)
-    GENERATE group AS room_type, FLATTEN(lowest_priced_room.price) AS lowest_price, FLATTEN(lowest_priced_room.name) AS property_name; --Flatten to remove tuple issue
+lowest_priced_rooms = FOREACH room_type_grouped {
+    price_asc_by_room_type = ORDER subset BY price ASC; --order to get the lowest price
+    lowest_priced_room_type = LIMIT price_asc_by_room_type 1; --lowest price for each room type (first index of group)
+    GENERATE group, FLATTEN(lowest_priced_room_type.price), FLATTEN(lowest_priced_room_type.name); --Flatten to remove tuple issue
 }
-DUMP room_type_stats;
+
+DUMP lowest_priced_rooms;
