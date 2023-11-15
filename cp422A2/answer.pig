@@ -23,17 +23,16 @@ neighbourhood_subset = GROUP subset BY neighbourhood_group;
 averaged_stats_by_group = FOREACH neighbourhood_subset GENERATE group, AVG(subset.price) AS price_ordering, AVG(subset.availability_365);
 
 -- Order results by price descending 
-price_desc_avg_stats_by_group = ORDER averaged_stats_by_group BY price_ordering DESC;
+price_desc_avg_stats_by_group = ORDER averaged_stats_by_group BY price_ordering DESC; --DUMP price_desc_avg_stats_by_group 
 
 -- Save to folder AirBnB_neighbourhood in home directory --> going to save in my current hdfs working directory
 STORE price_desc_avg_stats_by_group INTO 'AirBnB_neighbourhood' USING PigStorage(',');
 
 
-
 -- 3. For subset in step 1 dump: room_type, lowest_price foreach room_type, name of property with lowest price for room_type
-room_type_grouped = GROUP subset BY room_type;
+room_type_subset = GROUP subset BY room_type;
 
-lowest_priced_rooms = FOREACH room_type_grouped {
+lowest_priced_rooms = FOREACH room_type_subset {
     price_asc_by_room_type = ORDER subset BY price ASC; --order to get the lowest price
     lowest_priced_room_type = LIMIT price_asc_by_room_type 1; --lowest price for each room type (first index of group)
     GENERATE group, FLATTEN(lowest_priced_room_type.price), FLATTEN(lowest_priced_room_type.name); --Flatten to remove tuple issue
