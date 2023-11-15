@@ -29,6 +29,7 @@ price_desc_avg_stats_by_group = ORDER averaged_stats_by_group BY price_ordering 
 STORE price_desc_avg_stats_by_group INTO 'AirBnB_neighbourhood' USING PigStorage(',');
 
 
+
 -- 3. For subset in step 1 dump: room_type, lowest_price foreach room_type, name of property with lowest price for room_type
 room_type_subset = GROUP subset BY room_type;
 
