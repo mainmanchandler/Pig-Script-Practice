@@ -21,7 +21,7 @@ subset = FILTER dataset BY minimum_nights > 10 AND number_of_reviews > 10 AND la
 neighbourhood_subset = GROUP subset BY neighbourhood_group;
 
 -- Average price of each neighbourhood_group in col 2, Average num of days at each neighbourhood_group in col 3
-averaged_stats_by_group = FOREACH neighbourhood_subset GENERATE GROUP, AVG(subset.price) AS price_ordering, AVG(subset.availability_365);
+averaged_stats_by_group = FOREACH neighbourhood_subset GENERATE group, AVG(subset.price) AS price_ordering, AVG(subset.availability_365);
 
 -- Order results by price descending 
 price_desc_avg_stats_by_group = ORDER averaged_stats_by_group BY price_ordering DESC;
@@ -33,12 +33,26 @@ STORE price_desc_avg_stats_by_group INTO 'AirBnB_neighbourhood' USING PigStorage
 
 -- 3. For subset in step 1 dump: room_type, lowest_price foreach room_type, name of property with lowest price for room_type
 
+/*
 room_type_subset = GROUP subset BY room_type;
 
 lowest_price_by_room_type = FOREACH room_type_subset {
     lowest_price = MIN(subset.price);
-    lowest_price_for_room = FILTER subset BY price = lowest_price; --keep only the lowest price per room type
-    GENERATE GROUP AS room_type, lowest_price_for_room.price AS price, lowest_price_for_room AS property;
+    lowest_price_for_room = FILTER subset BY price == lowest_price; --keep only the lowest price per room type
+    GENERATE group AS room_type, lowest_price_for_room.price AS price, lowest_price_for_room AS property;
 }
 
 DUMP lowest_price_by_room_type
+*/
+
+grouped_by_room_type = GROUP subset BY room_type;
+room_type_stats = FOREACH grouped_by_room_type {
+    ordered_rooms = ORDER subset BY price ASC;
+    lowest_priced_room = LIMIT ordered_rooms 1;
+    GENERATE group AS room_type, 
+             lowest_priced_room.price AS lowest_price, 
+             lowest_priced_room.name AS property_name;
+}
+DUMP room_type_stats;
+
+
